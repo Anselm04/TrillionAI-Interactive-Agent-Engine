@@ -13,20 +13,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test
+      - name: Execute backend tests
+        run: npm test
         working-directory: services/engine
   flutter:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - working-directory: apps/demo_flutter
+      - name: Generate web platform without replacing application or tests
+        working-directory: apps/demo_flutter
         run: |
-          flutter pub get
-          flutter analyze
-          flutter test
-          flutter create --platforms=web --project-name trillionai_interactive_demo .
-          flutter build web
+          scaffold="$(mktemp -d)"
+          flutter create --platforms=web --project-name trillionai_interactive_demo "$scaffold"
+          cp -R "$scaffold/web" ./web
+      - name: Resolve dependencies
+        working-directory: apps/demo_flutter
+        run: flutter pub get
+      - name: Static analysis
+        working-directory: apps/demo_flutter
+        run: flutter analyze
+      - name: Widget tests
+        working-directory: apps/demo_flutter
+        run: flutter test
+      - name: Web release compilation
+        working-directory: apps/demo_flutter
+        run: flutter build web
