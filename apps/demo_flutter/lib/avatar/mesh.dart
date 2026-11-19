@@ -31,8 +31,8 @@ class Mesh {
     for(var i=0;i<rings;i++){
       for(var j=0;j<segments;j++){
         final a=i*segments+j,b=i*segments+(j+1)%segments,c=a+segments,d=b+segments;
-        if(i>0) faces.add(Triangle(a,c,b));
-        if(i<rings-1) faces.add(Triangle(b,c,d));
+        if(i>0) faces.add(Triangle(a,b,c));
+        if(i<rings-1) faces.add(Triangle(b,d,c));
       }
     }
     return Mesh(vertices,faces);
