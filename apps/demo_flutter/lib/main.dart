@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:material_ui/material_ui.dart';
-import 'package:http/http.dart' as http;
+import 'package:trillionai_interactive_sdk/trillionai_interactive_sdk.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'avatar.dart';
@@ -15,28 +14,22 @@ class _DemoState extends State<Demo> {
   final token=TextEditingController();
   final voice=FlutterTts();
   final speech=SpeechToText();
-  final client=http.Client();
+  late final client=InteractiveEngineClient(endpoint:Uri.parse(base),token:() async=>token.text);
   String? session;
   String state='idle', reply='Connect using your local engine token.';
   bool busy=false, listening=false;
   static const base=String.fromEnvironment('ENGINE_URL', defaultValue:'http://127.0.0.1:3000');
-  Map<String,String> get headers=>{'Authorization':'Bearer ${token.text}', 'Content-Type':'application/json'};
   Future<void> send() async {
     if(busy || listening || input.text.trim().isEmpty) return;
     setState((){busy=true;state='thinking';});
     try{
-      if(session==null){
-        final r=await client.post(Uri.parse('$base/v1/sessions'),headers:headers).timeout(const Duration(seconds:15));
-        if(r.statusCode!=201) throw Exception('Connection rejected');
-        session=jsonDecode(r.body)['id'] as String;
-      }
-      final r=await client.post(Uri.parse('$base/v1/sessions/$session/messages'),headers:headers,body:jsonEncode({'text':input.text})).timeout(const Duration(seconds:15));
-      if(r.statusCode!=200){if(r.statusCode==404)session=null;throw Exception('Request failed');}
+      session ??= await client.createSession();
+      final response=await client.sendMessage(session!,input.text);
       if(!mounted)return;
-      setState((){reply=jsonDecode(r.body)['text'] as String;state='speaking';});
+      setState((){reply=response.text;state='speaking';});
       await voice.awaitSpeakCompletion(true);
       await voice.speak(reply);
-    }catch(e){if(mounted)setState(()=>reply='Engine or voice unavailable. Check local configuration.');}
+    }catch(e){if(e is EngineException && e.status==404)session=null;if(mounted)setState(()=>reply='Engine or voice unavailable. Check local configuration.');}
     finally{if(mounted)setState((){busy=false;state='idle';});}
   }
   Future<void> listen() async {
