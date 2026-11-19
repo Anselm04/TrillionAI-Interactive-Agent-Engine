@@ -1,0 +1,2 @@
+# Opt-in local reasoning
+Install and start a compatible Ollama runtime separately, and obtain a model appropriate to your hardware and its license. Set ENGINE_LOCAL_MODEL to the installed model name before starting the Node service. The adapter contacts only 127.0.0.1:11434, does not download models, refuses redirects, enforces a nine-second deadline and bounds output. Without this variable the service retains explicitly labelled echo mode. The committed tests simulate HTTP responses; no live inference or performance qualification is claimed.
