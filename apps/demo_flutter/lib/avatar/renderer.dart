@@ -22,8 +22,8 @@ class MeshRenderer extends CustomPainter {
     for(final part in character.parts){
       final points=part.mesh.vertices.map((v){
         var p=v;
-        if(part.id=='mouth') p=Vec3(p.x,-.29+(p.y+.29)*(1+2*mouthOpen.clamp(0,1)),p.z);
-        if(part.id.endsWith('eye')) p=Vec3(p.x,.16+(p.y-.16)*(1-.92*blink.clamp(0,1)),p.z);
+        if(part.id=='mouth') p=Vec3(p.x,-.29+(p.y+.29)*(1+2*mouthOpen.clamp(0.0,1.0).toDouble()),p.z);
+        if(part.id.endsWith('eye')) p=Vec3(p.x,.16+(p.y-.16)*(1-.92*blink.clamp(0.0,1.0).toDouble()),p.z);
         return p.rotateY(yaw).rotateX(pitch);
       }).toList(growable:false);
       for(final t in part.mesh.triangles){
