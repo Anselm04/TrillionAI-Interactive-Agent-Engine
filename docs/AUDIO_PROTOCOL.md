@@ -1,0 +1,2 @@
+# Audio framing
+PCM signed 16-bit little-endian mono at 16 kHz. Maintain independent AudioProtocol instances for uplink and downlink. Each direction carries turn ID, monotonically increasing sequence and even-length PCM payload; offsets derive from sample counts. A cancelled turn rejects late frames. Limit each direction to 60 seconds and each frame to 200 ms. This is a transport-neutral validator, not a WebSocket or WebRTC service. Device capture, playback clock, wire encoding, backpressure and authentication must be integrated before live audio qualification.
