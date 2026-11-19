@@ -1,0 +1,3 @@
+# Voice timing and interruption
+The Flutter timeline consumes timestamped ARPAbet phonemes (milliseconds relative to audio playback), maps them to mouth poses, and blends adjacent cues. A speech adapter must provide measured cue timing and the actual playback clock. Platform TTS does not yet supply this contract; accurate live lip sync is not claimed.
+The Node VoiceTurn controller provides cancellation and stale result rejection independently of transport. It is not yet connected to a live microphone or streaming audio. The next integration must propagate cancellation through recognition, reasoning, synthesis and playback.
