@@ -1,4 +1,6 @@
 import http from 'node:http';
+import {MemoryStore} from './memory.mjs';
+import {contextualProvider} from './conversation.mjs';
 import {createLocalModel} from './local-model.mjs';
 import {randomUUID, timingSafeEqual} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
@@ -51,5 +53,11 @@ export function createEngine({token, origin='http://localhost:8080', provider=lo
   return server;
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
-  createEngine({token:process.env.ENGINE_TOKEN,origin:process.env.CLIENT_ORIGIN,provider:process.env.ENGINE_LOCAL_MODEL?createLocalModel({model:process.env.ENGINE_LOCAL_MODEL}):localProvider}).listen(3000,'127.0.0.1',()=>console.log('Local engine on 127.0.0.1:3000'));
+  let provider=process.env.ENGINE_LOCAL_MODEL?createLocalModel({model:process.env.ENGINE_LOCAL_MODEL}):localProvider;
+  if(process.env.ENGINE_MEMORY_PATH&&!process.env.ENGINE_LOCAL_MODEL)throw new Error('Memory requires explicit local model selection');
+  const memory=process.env.ENGINE_MEMORY_PATH?new MemoryStore(process.env.ENGINE_MEMORY_PATH):null;
+  if(memory)provider=contextualProvider({provider,memory,principal:'local-owner'});
+  const server=createEngine({token:process.env.ENGINE_TOKEN,origin:process.env.CLIENT_ORIGIN,provider});
+  if(memory)server.once('close',()=>memory.close());
+  server.listen(3000,'127.0.0.1',()=>console.log('Local engine on 127.0.0.1:3000'));
 }
