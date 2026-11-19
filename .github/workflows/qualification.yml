@@ -1,0 +1,45 @@
+name: Foundation qualification
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute backend tests
+        run: npm test
+        working-directory: services/engine
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+      - name: Generate web platform without replacing application or tests
+        working-directory: apps/demo_flutter
+        run: |
+          scaffold="$(mktemp -d)"
+          flutter create --platforms=web --project-name trillionai_interactive_demo "$scaffold"
+          cp -R "$scaffold/web" ./web
+      - name: Resolve dependencies
+        working-directory: apps/demo_flutter
+        run: flutter pub get
+      - name: Static analysis
+        working-directory: apps/demo_flutter
+        run: flutter analyze
+      - name: Widget tests
+        working-directory: apps/demo_flutter
+        run: flutter test
+      - name: Web release compilation
+        working-directory: apps/demo_flutter
+        run: flutter build web
