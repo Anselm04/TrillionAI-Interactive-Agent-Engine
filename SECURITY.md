@@ -1,0 +1,3 @@
+# Security policy
+This is a private proprietary project. Report vulnerabilities privately to the repository owner using an authorized private channel; do not disclose secrets in issues.
+Never commit provider keys, credentials, voice recordings or customer data. Require least-privilege credentials, tenant isolation, input validation, rate limits and bounded agent actions. Obtain explicit consent for audio capture and retention. Support revocation, export and deletion. Require approval for consequential external actions. Security incidents should trigger containment, credential rotation and documented remediation.
