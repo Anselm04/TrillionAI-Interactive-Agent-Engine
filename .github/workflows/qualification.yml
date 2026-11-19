@@ -43,3 +43,10 @@ jobs:
       - name: Web release compilation
         working-directory: apps/demo_flutter
         run: flutter build web
+
+      - name: Qualify reusable Dart SDK
+        working-directory: packages/flutter_sdk
+        run: |
+          dart pub get
+          dart analyze
+          dart test
