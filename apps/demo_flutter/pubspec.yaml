@@ -6,6 +6,8 @@ environment:
   sdk: '>=3.14.0 <4.0.0'
   flutter: '>=3.50.0'
 dependencies:
+  trillionai_interactive_sdk:
+    path: ../../packages/flutter_sdk
   flutter:
     sdk: flutter
   material_ui: 1.11.1
