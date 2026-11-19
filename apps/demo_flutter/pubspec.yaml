@@ -6,10 +6,11 @@ environment:
   sdk: '>=3.14.0 <4.0.0'
   flutter: '>=3.50.0'
 dependencies:
+  trillionai_interactive_sdk:
+    path: ../../packages/flutter_sdk
   flutter:
     sdk: flutter
   material_ui: 1.11.1
-  http: ^1.2.2
   flutter_tts: ^4.2.3
   speech_to_text: ^7.0.0
 dev_dependencies:

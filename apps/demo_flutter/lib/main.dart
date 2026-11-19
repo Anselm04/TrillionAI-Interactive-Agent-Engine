@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:material_ui/material_ui.dart';
-import 'package:http/http.dart' as http;
+import 'package:trillionai_interactive_sdk/trillionai_interactive_sdk.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'avatar.dart';
@@ -15,29 +14,32 @@ class _DemoState extends State<Demo> {
   final token=TextEditingController();
   final voice=FlutterTts();
   final speech=SpeechToText();
-  final client=http.Client();
+  late final client=InteractiveEngineClient(endpoint:Uri.parse(base),token:() async=>token.text);
   String? session;
   String state='idle', reply='Connect using your local engine token.';
   bool busy=false, listening=false;
+  int generation=0;
+  String mode='Engine not connected';
+  Future<void> stopPlayback() async {
+    if(state!='speaking')return;
+    generation++;
+    try { await voice.stop(); } finally { if(mounted)setState((){busy=false;state='idle';}); }
+  }
   static const base=String.fromEnvironment('ENGINE_URL', defaultValue:'http://127.0.0.1:3000');
-  Map<String,String> get headers=>{'Authorization':'Bearer ${token.text}', 'Content-Type':'application/json'};
   Future<void> send() async {
     if(busy || listening || input.text.trim().isEmpty) return;
+    final turn=++generation;
     setState((){busy=true;state='thinking';});
     try{
-      if(session==null){
-        final r=await client.post(Uri.parse('$base/v1/sessions'),headers:headers).timeout(const Duration(seconds:15));
-        if(r.statusCode!=201) throw Exception('Connection rejected');
-        session=jsonDecode(r.body)['id'] as String;
-      }
-      final r=await client.post(Uri.parse('$base/v1/sessions/$session/messages'),headers:headers,body:jsonEncode({'text':input.text})).timeout(const Duration(seconds:15));
-      if(r.statusCode!=200){if(r.statusCode==404)session=null;throw Exception('Request failed');}
-      if(!mounted)return;
-      setState((){reply=jsonDecode(r.body)['text'] as String;state='speaking';});
+      session ??= await client.createSession();
+      final response=await client.sendMessage(session!,input.text);
+      if(!mounted||turn!=generation)return;
+      setState((){reply=response.text;mode=response.mode;state='speaking';});
       await voice.awaitSpeakCompletion(true);
+      if(!mounted||turn!=generation)return;
       await voice.speak(reply);
-    }catch(e){if(mounted)setState(()=>reply='Engine or voice unavailable. Check local configuration.');}
-    finally{if(mounted)setState((){busy=false;state='idle';});}
+    }catch(e){if(e is EngineException && e.status==404)session=null;if(mounted&&turn==generation)setState(()=>reply='Engine or voice unavailable. Check local configuration.');}
+    finally{if(mounted&&turn==generation)setState((){busy=false;state='idle';});}
   }
   Future<void> listen() async {
     if(busy)return;
@@ -55,11 +57,11 @@ class _DemoState extends State<Demo> {
     backgroundColor:const Color(0xfff4f8fc),appBar:AppBar(title:const Text('TrillionAI Interactive Engine')),
     body:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:560),child:ListView(padding:const EdgeInsets.all(24),children:[
       AgentAvatar(state:state),Center(child:Text(state.toUpperCase())),
-      const Text('Local demonstration · no model connected'),
+      Text(mode=='local-demo'?'Local demonstration · no model connected':mode),
       const SizedBox(height:16),TextField(controller:token,obscureText:true,enabled:!busy&&!listening,decoration:const InputDecoration(labelText:'Local engine token'),onChanged:(_)=>session=null),
       const SizedBox(height:16),SelectableText(reply),
       TextField(controller:input,maxLength:2000,decoration:const InputDecoration(labelText:'Message')),
       const Text('Microphone uses device speech services; audio may be processed by your platform provider. Tap only to consent.'),
-      Wrap(spacing:12,children:[FilledButton(onPressed:busy||listening?null:send,child:const Text('Send')),OutlinedButton(onPressed:busy?null:listen,child:Text(listening?'Stop microphone':'Use microphone')),OutlinedButton(onPressed:()=>voice.stop(),child:const Text('Stop speech'))])
+      Wrap(spacing:12,children:[FilledButton(onPressed:busy||listening?null:send,child:const Text('Send')),OutlinedButton(onPressed:busy?null:listen,child:Text(listening?'Stop microphone':'Use microphone')),OutlinedButton(onPressed:state=='speaking'?stopPlayback:null,child:const Text('Stop speech'))])
     ]))));
 }
