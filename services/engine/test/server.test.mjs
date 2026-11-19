@@ -1,0 +1,21 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createEngine} from '../src/server.mjs';
+import {once} from 'node:events';
+test('local authenticated session lifecycle and validation',async t=>{
+ const token='x'.repeat(32), server=createEngine({token});
+ server.listen(0,'127.0.0.1');await once(server,'listening');
+ t.after(()=>new Promise(r=>server.close(r)));
+ const base='http://127.0.0.1:'+server.address().port;
+ const headers={authorization:'Bearer '+token,'content-type':'application/json'};
+ assert.equal((await fetch(base+'/v1/health')).status,401);
+ assert.equal((await fetch(base+'/v1/health',{headers:{...headers,origin:'https://invalid.test'}})).status,403);
+ const created=await fetch(base+'/v1/sessions',{method:'POST',headers});assert.equal(created.status,201);
+ const {id}=await created.json(), url=base+'/v1/sessions/'+id;
+ assert.equal((await fetch(url+'/messages',{method:'POST',headers,body:'{}'})).status,400);
+ const reply=await fetch(url+'/messages',{method:'POST',headers,body:JSON.stringify({text:'hello'})});
+ assert.equal(reply.status,200);assert.deepEqual(await reply.json(),{version:1,sessionId:id,sequence:1,type:'assistant.message',text:'Local demonstration (no AI provider): hello',mode:'local-demo'});
+ assert.equal((await fetch(url,{method:'DELETE',headers})).status,200);
+ assert.equal((await fetch(url+'/messages',{method:'POST',headers,body:'{}'})).status,404);
+});
+test('weak token rejected',()=>assert.throws(()=>createEngine({token:'short'})));
