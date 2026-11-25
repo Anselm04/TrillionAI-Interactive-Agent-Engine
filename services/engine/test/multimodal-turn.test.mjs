@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {MultimodalTurn} from '../src/multimodal-turn.mjs';
+test('orders multimodal frames and cancels turns',()=>{const t=new MultimodalTurn();t.start('a');assert.equal(t.accept({turn:'a',sequence:0,kind:'text',payload:'hi'}).bytes,2);assert.throws(()=>t.accept({turn:'a',sequence:2,kind:'image',payload:Buffer.from([1])}));t.interrupt();assert.throws(()=>t.accept({turn:'a',sequence:1,kind:'audio',payload:Buffer.from([1,2])}));});
+test('rejects oversized frames',()=>{const t=new MultimodalTurn();t.start('a');assert.throws(()=>t.accept({turn:'a',sequence:0,kind:'image',payload:Buffer.alloc(1000001)}));});
